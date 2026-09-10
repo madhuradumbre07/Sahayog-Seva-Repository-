@@ -8,6 +8,7 @@ import '../../providers/booking_flow_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../widgets/language_selector_button.dart';
+import '../../widgets/customer/saved_addresses_sheet.dart';
 import 'customer_booking_confirmation_screen.dart';
 
 class CustomerBookingDetailsScreen extends StatefulWidget {
@@ -67,58 +68,20 @@ class _CustomerBookingDetailsScreenState
     );
   }
 
-  void _showAddressPickerModal(BuildContext context) {
+  void _showAddressPickerModal(BuildContext context) async {
     final bookingProv = context.read<BookingFlowProvider>();
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                ctx.tr('addressSection'),
-                style: AppTypography.heading(fontSize: 18)
-                    .copyWith(fontWeight: FontWeight.bold),
-              ),
-              const Divider(),
-              ...AddressItem.defaultAddresses.map((addr) {
-                final isSelected =
-                    bookingProv.draft.selectedAddress.id == addr.id;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    isSelected
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_off,
-                    color: isSelected ? AppColors.primary : Colors.grey,
-                  ),
-                  title: Text(
-                    addr.localizedTitle(ctx),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    addr.localizedAddressLine(ctx),
-                    style: AppTypography.subtitle(fontSize: 12),
-                  ),
-                  onTap: () {
-                    bookingProv.updateAddress(addr);
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
-        );
-      },
-    );
+    final chosen = await SavedAddressesSheet.show(context);
+    if (chosen != null) {
+      final addrItem = AddressItem.fromSavedAddress(
+        id: (chosen.id ?? 1).toString(),
+        title: chosen.title,
+        addressLine: chosen.addressLine,
+        latitude: chosen.latitude,
+        longitude: chosen.longitude,
+        isDefault: chosen.isDefault,
+      );
+      bookingProv.updateAddress(addrItem);
+    }
   }
 
   void _showTimeSlotPickerModal(BuildContext context) {

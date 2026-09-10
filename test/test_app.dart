@@ -16,6 +16,8 @@ import 'package:sahayogseva/screens/customer/customer_ai_result_screen.dart';
 import 'package:sahayogseva/screens/customer/customer_describe_problem_screen.dart';
 import 'package:sahayogseva/providers/matching_provider.dart';
 import 'package:sahayogseva/providers/booking_flow_provider.dart';
+import 'package:sahayogseva/providers/customer_address_provider.dart';
+import 'package:sahayogseva/providers/notification_provider.dart';
 import 'package:sahayogseva/screens/customer/customer_matching_workers_screen.dart';
 import 'package:sahayogseva/screens/customer/customer_booking_confirmation_screen.dart';
 import 'package:sahayogseva/screens/customer/customer_track_service_screen.dart';
@@ -83,6 +85,8 @@ Widget flowApp({
       ChangeNotifierProvider(create: (_) => WalletProvider()),
       ChangeNotifierProvider(create: (_) => WorkerProfileProvider()),
       ChangeNotifierProvider(create: (_) => RegistrationProvider()),
+      ChangeNotifierProvider(create: (_) => CustomerAddressProvider()),
+      ChangeNotifierProvider(create: (_) => NotificationProvider()),
     ],
     child: MaterialApp(
       initialRoute: initialRoute,

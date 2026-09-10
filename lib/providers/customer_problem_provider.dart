@@ -2,8 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../l10n/l10n.dart';
 import '../models/customer_problem_model.dart';
+import '../services/customer_api_service.dart';
 
 class CustomerProblemProvider extends ChangeNotifier {
+  final CustomerApiService _apiService;
+
+  CustomerProblemProvider({CustomerApiService? apiService})
+      : _apiService = apiService ?? CustomerApiService();
+
   InputModeType _activeMode = InputModeType.text;
   String _draftText = '';
   List<ProblemMediaItem> _mediaList = [];
@@ -172,7 +178,14 @@ class CustomerProblemProvider extends ChangeNotifier {
     _analysisStepIndex = 0;
     notifyListeners();
 
-    final stepDuration = fast ? 100 : 400;
+    // Trigger backend AI parsing concurrently
+    final parseFuture = _apiService.parseProblem(
+      text: _draftText.isNotEmpty ? _draftText : 'Water is leaking from tap',
+      languageCode: _detectedLanguageCode,
+      mediaAttached: _mediaList.isNotEmpty || _videoItem != null,
+    );
+
+    final stepDuration = fast ? 100 : 350;
 
     for (int i = 0; i <= 3; i++) {
       _analysisStepIndex = i;
@@ -181,11 +194,61 @@ class CustomerProblemProvider extends ChangeNotifier {
       await Future.delayed(Duration(milliseconds: stepDuration));
     }
 
-    _analysisResult = AiAnalysisResultModel.createDefault(
-      input: _draftText.isNotEmpty ? _draftText : 'Water is leaking from tap',
-      media: _mediaList.isNotEmpty ? _mediaList.first : _videoItem,
-      detectedLanguageCode: _detectedLanguageCode,
-    );
+    Map<String, dynamic>? parsed;
+    try {
+      parsed = await parseFuture;
+    } catch (_) {}
+
+    if (parsed != null) {
+      final category = (parsed['service_category'] ?? 'Plumbing').toString();
+      final subcategory = (parsed['subcategory'] ?? 'Tap & Faucet Repair').toString();
+      final explanation = (parsed['explanation'] ?? 'AI diagnosed issue based on description.').toString();
+      final skills = (parsed['suggested_skills'] as List?)?.map((s) => s.toString()).toList() ?? ['skillListPlumber'];
+      final minCost = parsed['estimated_cost_min'] ?? 200;
+      final maxCost = parsed['estimated_cost_max'] ?? 450;
+      final minTime = parsed['estimated_time_min'] ?? 30;
+      final maxTime = parsed['estimated_time_max'] ?? 60;
+      final score = (parsed['confidence_score'] as num?)?.toDouble() ?? 0.92;
+
+      _analysisResult = AiAnalysisResultModel(
+        recognizedProblem: subcategory,
+        recognizedProblemSub: explanation,
+        confidenceScore: score,
+        suggestedCategory: category == 'Plumbing' ? 'suggestedPlumbingTitle' : category,
+        tags: [category, subcategory, ...skills],
+        requiredSkills: skills,
+        estimatedTime: '$minTime-$maxTime mins',
+        estimatedPrice: '₹$minCost - ₹$maxCost',
+        urgencyLevel: parsed['urgency'] == 'HIGH' || parsed['urgency'] == 'EMERGENCY'
+            ? 'urgencyHighText'
+            : 'urgencyMediumText',
+        aiReasoning: explanation,
+        attachedMedia: _mediaList.isNotEmpty ? _mediaList.first : _videoItem,
+        detectedLanguageCode: _detectedLanguageCode,
+        alternatives: [
+          AlternativeServiceModel(
+            id: 'alt_1',
+            title: '$subcategory Inspection & Repair',
+            matchPercentage: '95%',
+            priceRange: '₹$minCost - ₹$maxCost',
+            icon: Icons.plumbing,
+          ),
+          AlternativeServiceModel(
+            id: 'alt_2',
+            title: '$category Comprehensive Maintenance',
+            matchPercentage: '85%',
+            priceRange: '₹${(minCost as num).toInt() + 100} - ₹${(maxCost as num).toInt() + 200}',
+            icon: Icons.handyman,
+          ),
+        ],
+      );
+    } else {
+      _analysisResult = AiAnalysisResultModel.createDefault(
+        input: _draftText.isNotEmpty ? _draftText : 'Water is leaking from tap',
+        media: _mediaList.isNotEmpty ? _mediaList.first : _videoItem,
+        detectedLanguageCode: _detectedLanguageCode,
+      );
+    }
 
     _isAnalyzing = false;
     notifyListeners();

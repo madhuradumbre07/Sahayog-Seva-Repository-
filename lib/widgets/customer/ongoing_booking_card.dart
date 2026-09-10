@@ -50,12 +50,18 @@ class OngoingBookingCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                context.tr('viewAll'),
-                style: AppTypography.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+              GestureDetector(
+                onTap: () {
+                  final code = booking.bookingCode.isNotEmpty ? booking.bookingCode : booking.id;
+                  Navigator.pushNamed(context, '/customer/track-service', arguments: code);
+                },
+                child: Text(
+                  context.tr('viewAll'),
+                  style: AppTypography.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ],

@@ -21,11 +21,11 @@ class BookingTrackingProvider extends ChangeNotifier {
 
   /// Start mock simulation (called when user clicks 'simulate');
 
-  // For demo simulation
-  final bool _demoMode = true;
+  final bool _demoMode;
 
-  BookingTrackingProvider({MatchingApiService? apiService})
-      : _apiService = apiService ?? MatchingApiService();
+  BookingTrackingProvider({MatchingApiService? apiService, bool demoMode = false})
+      : _apiService = apiService ?? MatchingApiService(),
+        _demoMode = demoMode;
 
   BookingTrackingModel? get trackingData => _trackingData;
   bool get hasInjectedMockData => _isInjectedMockData;
@@ -68,11 +68,13 @@ class BookingTrackingProvider extends ChangeNotifier {
 
   void startPolling(String bookingId) {
     stopPolling();
-    // 4 seconds interval for interactive demo transitions
+    if (!_isInjectedMockData) {
+      fetchTrackingData(bookingId);
+    }
     _pollingTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_demoMode && _trackingData != null) {
         _simulateStageProgression();
-      } else {
+      } else if (!_isInjectedMockData) {
         fetchTrackingData(bookingId);
       }
     });

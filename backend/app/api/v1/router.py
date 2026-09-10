@@ -10,6 +10,9 @@ from app.api.v1.invoices import router as invoices_router
 from app.api.v1.jobs import router as jobs_router, legacy_router as legacy_jobs_router
 from app.api.v1.cooperative import router as cooperative_router
 from app.api.v1.wallet import router as wallet_router
+from app.api.v1.addresses import router as addresses_router
+from app.api.v1.notifications import router as notifications_router
+from app.api.v1.services import router as services_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
@@ -24,5 +27,8 @@ api_router.include_router(invoices_router)
 api_router.include_router(jobs_router)
 api_router.include_router(legacy_jobs_router)
 api_router.include_router(cooperative_router)
+api_router.include_router(addresses_router)
+api_router.include_router(notifications_router)
+api_router.include_router(services_router)
 
 

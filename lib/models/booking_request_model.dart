@@ -61,6 +61,24 @@ class AddressItem {
       isDefault: false,
     ),
   ];
+
+  factory AddressItem.fromSavedAddress({
+    required String id,
+    required String title,
+    required String addressLine,
+    double latitude = 18.4800,
+    double longitude = 73.8000,
+    bool isDefault = false,
+  }) {
+    return AddressItem(
+      id: id,
+      title: title,
+      addressLine: addressLine,
+      latitude: latitude,
+      longitude: longitude,
+      isDefault: isDefault,
+    );
+  }
 }
 
 class BookingTimeSlotItem {

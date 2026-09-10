@@ -2,6 +2,35 @@ import 'package:flutter/material.dart';
 
 enum BookingStatus { accepted, onTheWay, upcoming, completed, cancelled }
 
+class ServiceSubcategoryItem {
+  const ServiceSubcategoryItem({
+    required this.id,
+    required this.title,
+    required this.titleKey,
+    required this.startingPrice,
+    required this.estimatedTime,
+    this.iconName,
+  });
+
+  final String id;
+  final String title;
+  final String titleKey;
+  final int startingPrice;
+  final String estimatedTime;
+  final String? iconName;
+
+  factory ServiceSubcategoryItem.fromJson(Map<String, dynamic> json) {
+    return ServiceSubcategoryItem(
+      id: (json['id'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      titleKey: (json['title_key'] ?? '').toString(),
+      startingPrice: (json['starting_price'] as num?)?.toInt() ?? 199,
+      estimatedTime: (json['estimated_time'] ?? '30-45 mins').toString(),
+      iconName: json['icon_name'] as String?,
+    );
+  }
+}
+
 class PopularServiceItem {
   const PopularServiceItem({
     required this.id,
@@ -10,6 +39,8 @@ class PopularServiceItem {
     required this.color,
     required this.bgColor,
     this.startingPrice,
+    this.description,
+    this.subcategories = const [],
   });
 
   final String id;
@@ -18,6 +49,62 @@ class PopularServiceItem {
   final Color color;
   final Color bgColor;
   final int? startingPrice;
+  final String? description;
+  final List<ServiceSubcategoryItem> subcategories;
+
+  static IconData _iconFromName(String? name) {
+    switch (name) {
+      case 'plumbing':
+      case 'water_drop':
+        return Icons.plumbing;
+      case 'bolt':
+      case 'electric_bolt':
+      case 'toggle_on':
+        return Icons.bolt;
+      case 'cleaning_services':
+      case 'sanitizer':
+      case 'water':
+      case 'kitchen':
+        return Icons.cleaning_services;
+      case 'format_paint':
+      case 'brush':
+      case 'shield':
+        return Icons.format_paint;
+      case 'tv':
+      case 'ac_unit':
+      case 'hot_tub':
+        return Icons.tv;
+      default:
+        return Icons.handyman;
+    }
+  }
+
+  static Color _colorFromHex(String? hex, Color fallback) {
+    if (hex == null || hex.isEmpty) return fallback;
+    final clean = hex.replaceAll('#', '');
+    if (clean.length == 6) {
+      return Color(int.parse('FF$clean', radix: 16));
+    }
+    return fallback;
+  }
+
+  factory PopularServiceItem.fromJson(Map<String, dynamic> json) {
+    final subList = (json['subcategories'] as List?)
+            ?.map((s) => ServiceSubcategoryItem.fromJson(s as Map<String, dynamic>))
+            .toList() ??
+        const [];
+
+    return PopularServiceItem(
+      id: (json['id'] ?? '').toString(),
+      titleKey: (json['title_key'] ?? json['title'] ?? '').toString(),
+      icon: _iconFromName(json['icon_name'] as String?),
+      color: _colorFromHex(json['color_hex'] as String?, const Color(0xFF1976D2)),
+      bgColor: _colorFromHex(json['bg_color_hex'] as String?, const Color(0xFFE3F2FD)),
+      startingPrice: (json['starting_price'] as num?)?.toInt(),
+      description: json['description'] as String?,
+      subcategories: subList,
+    );
+  }
 
   static const List<PopularServiceItem> defaults = [
     PopularServiceItem(
@@ -91,6 +178,39 @@ class BookingItem {
   final String? workerAvatarUrl;
   final int price;
   final String address;
+
+  factory BookingItem.fromJson(Map<String, dynamic> json) {
+    final rawStatus = (json['status'] ?? json['current_stage'] ?? 'PENDING_WORKER').toString().toUpperCase();
+    BookingStatus status = BookingStatus.accepted;
+    if (rawStatus.contains('NAVIGAT') || rawStatus.contains('ON_THE_WAY')) {
+      status = BookingStatus.onTheWay;
+    } else if (rawStatus.contains('ARRIV') || rawStatus.contains('PROGRESS') || rawStatus.contains('STARTED')) {
+      status = BookingStatus.upcoming;
+    } else if (rawStatus.contains('COMPLET')) {
+      status = BookingStatus.completed;
+    } else if (rawStatus.contains('CANCEL') || rawStatus.contains('REJECT')) {
+      status = BookingStatus.cancelled;
+    }
+
+    final cat = (json['service_category'] ?? json['service_name'] ?? 'servicePlumber').toString();
+    final subcat = (json['service_subcategory'] ?? '').toString();
+    final titleKey = subcat.isNotEmpty ? subcat : cat;
+
+    return BookingItem(
+      id: (json['id'] ?? json['booking_id'] ?? '').toString(),
+      bookingCode: (json['booking_code'] ?? '').toString(),
+      serviceTitleKey: titleKey,
+      dateText: (json['scheduled_date'] ?? 'Today').toString(),
+      timeText: (json['time_slot'] ?? json['scheduled_time_slot'] ?? '11:00 AM').toString(),
+      status: status,
+      workerName: (json['worker_name'] ?? 'Assigned Worker').toString(),
+      workerRating: (json['rating_avg'] as num?)?.toDouble() ?? 4.8,
+      workerTradeKey: cat,
+      workerAvatarUrl: json['worker_avatar_url'] as String?,
+      price: (json['total_price'] as num?)?.toInt() ?? 350,
+      address: (json['address_line'] ?? 'Ganesh Apts, Warje, Pune').toString(),
+    );
+  }
 
   static const sample = BookingItem(
     id: 'b1',

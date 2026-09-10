@@ -12,6 +12,8 @@ import '../../../widgets/edit_profile_dialog.dart';
 import '../../../widgets/wallet_top_up_modal.dart';
 import '../../../widgets/wallet_transactions_sheet.dart';
 import '../../../widgets/workspace_switcher_sheet.dart';
+import '../../../widgets/customer/saved_addresses_sheet.dart';
+import '../../../widgets/support_help_dialog.dart';
 
 class CustomerProfileView extends StatefulWidget {
   const CustomerProfileView({super.key});
@@ -196,7 +198,7 @@ class _CustomerProfileViewState extends State<CustomerProfileView> {
             context,
             Icons.location_on_outlined,
             context.tr('savedAddresses'),
-            onTap: () {},
+            onTap: () => SavedAddressesSheet.show(context),
           ),
           _tile(
             context,
@@ -208,7 +210,7 @@ class _CustomerProfileViewState extends State<CustomerProfileView> {
             context,
             Icons.help_outline,
             context.tr('supportHelp'),
-            onTap: () {},
+            onTap: () => SupportHelpDialog.show(context),
           ),
           _tile(
             context,

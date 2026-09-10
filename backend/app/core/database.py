@@ -11,6 +11,8 @@ import app.models.worker_profile  # noqa: F401
 import app.models.booking  # noqa: F401
 import app.models.job  # noqa: F401
 import app.models.payment_rating  # noqa: F401
+import app.models.address  # noqa: F401
+import app.models.notification  # noqa: F401
 
 # Engine configuration
 connect_args = {}

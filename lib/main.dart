@@ -13,6 +13,8 @@ import 'providers/language_provider.dart';
 import 'providers/worker_dashboard_provider.dart';
 import 'providers/matching_provider.dart';
 import 'providers/booking_flow_provider.dart';
+import 'providers/customer_address_provider.dart';
+import 'providers/notification_provider.dart';
 import 'providers/registration_provider.dart';
 import 'screens/auth/language_selection_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -100,6 +102,8 @@ class SahayogSevaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CooperativeDashboardProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => WorkerProfileProvider()),
+        ChangeNotifierProvider(create: (_) => CustomerAddressProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: Consumer2<LanguageProvider, AuthProvider>(
         builder: (context, language, auth, _) {

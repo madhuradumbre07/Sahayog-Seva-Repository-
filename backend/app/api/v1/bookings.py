@@ -3,10 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select, or_
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from app.core.database import get_session
 from app.models.booking import Booking, BookingCreateRequest, BookingRead, BookingTrackingResponse
+from app.models.notification import Notification
 from app.models.worker import Worker
 from app.models.worker_profile import WorkerProfile
 from app.models.job import (
@@ -128,9 +129,31 @@ async def create_booking(
     worker = wres.scalars().first()
 
     session.add(_job_from_booking(booking, worker, req))
+    
+    # Notify customer of confirmed booking
+    session.add(
+        Notification(
+            user_id=customer_id,
+            title="Booking Confirmed",
+            message=f"Your booking {code} for {req.service_subcategory or req.service_category} has been placed. Nearby workers are being notified.",
+            type="BOOKING",
+            related_id=booking.booking_code,
+        )
+    )
     await session.commit()
     await session.refresh(booking)
     return booking
+
+
+@router.get("/customer/{customer_id}", response_model=List[BookingRead])
+async def get_customer_bookings(customer_id: str, session: AsyncSession = Depends(get_session)):
+    stmt = (
+        select(Booking)
+        .where(Booking.customer_id == customer_id)
+        .order_by(Booking.created_at.desc())
+    )
+    res = await session.execute(stmt)
+    return res.scalars().all()
 
 
 @router.get("/{booking_id}", response_model=BookingRead)
@@ -206,3 +229,43 @@ async def track_booking(booking_id: str, session: AsyncSession = Depends(get_ses
         rating_avg=worker.rating_avg if worker else (profile.rating_avg if profile and profile.rating_avg else 0.0),
         review_count=worker.review_count if worker else (profile.review_count if profile and profile.review_count else 0),
     )
+
+
+@router.post("/{booking_id}/cancel", response_model=BookingRead)
+async def cancel_booking(booking_id: str, session: AsyncSession = Depends(get_session)):
+    stmt = select(Booking).where(
+        or_(
+            Booking.booking_code == booking_id,
+            Booking.id == int(booking_id) if booking_id.isdigit() else -1,
+        )
+    )
+    res = await session.execute(stmt)
+    booking = res.scalars().first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    booking.status = "CANCELLED"
+    session.add(booking)
+
+    # Cancel associated job record if present
+    jres = await session.execute(select(WorkerJobRecord).where(WorkerJobRecord.booking_id == booking.booking_code))
+    job = jres.scalars().first()
+    if job:
+        job.status = JobRequestStatus.REJECTED
+        session.add(job)
+
+    # Create cancellation notification
+    session.add(
+        Notification(
+            user_id=booking.customer_id,
+            title="Booking Cancelled",
+            message=f"Booking {booking.booking_code} ({booking.service_subcategory or booking.service_category}) was cancelled.",
+            type="BOOKING",
+            related_id=booking.booking_code,
+        )
+    )
+
+    await session.commit()
+    await session.refresh(booking)
+    return booking
+

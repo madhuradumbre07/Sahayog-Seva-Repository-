@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/l10n.dart';
 import '../../providers/customer_dashboard_provider.dart';
+import '../../providers/customer_problem_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 
@@ -62,13 +63,8 @@ class PopularServicesGrid extends StatelessWidget {
               children: services.map((service) {
                 return GestureDetector(
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Selected service: ${context.tr(service.titleKey)}'),
-                        backgroundColor: service.color,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    context.read<CustomerProblemProvider>().setText('Need assistance with ${context.tr(service.titleKey)} service');
+                    Navigator.pushNamed(context, '/customer/describe-problem');
                   },
                   child: Container(
                     margin: const EdgeInsets.only(right: 14),
