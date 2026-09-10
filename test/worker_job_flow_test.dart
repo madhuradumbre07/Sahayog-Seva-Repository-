@@ -280,7 +280,7 @@ void main() {
       expect(find.text('Reject'), findsOneWidget);
     });
 
-    testWidgets('provider postpone and accept flows update state correctly', (tester) async {
+    Future<void> _testPostponeAndAccept(WidgetTester tester) async {
       final jobProvider = WorkerJobProvider(apiService: MockWorkerJobApiService());
       addTearDown(() => jobProvider.stopCountdownTimer());
 
@@ -301,6 +301,14 @@ void main() {
       expect(accepted, isTrue);
       expect(jobProvider.currentState, JobRequestState.youAccepted);
       expect(jobProvider.lifecycleState, WorkerJobLifecycleState.accepted);
+    }
+
+    testWidgets('tapping Decide Later handles postponement and Accept triggers acceptance', (tester) async {
+      await _testPostponeAndAccept(tester);
+    });
+
+    testWidgets('tapping Decide Later handles postponementand Accept triggers acceptance', (tester) async {
+      await _testPostponeAndAccept(tester);
     });
   });
 
