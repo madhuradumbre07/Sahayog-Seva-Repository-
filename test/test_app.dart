@@ -24,6 +24,9 @@ import 'package:sahayogseva/screens/customer/customer_service_rating_screen.dart
 import 'package:sahayogseva/providers/booking_tracking_provider.dart';
 import 'package:sahayogseva/providers/service_completion_provider.dart';
 import 'package:sahayogseva/providers/worker_job_provider.dart';
+import 'package:sahayogseva/providers/wallet_provider.dart';
+import 'package:sahayogseva/providers/worker_profile_provider.dart';
+import 'package:sahayogseva/providers/registration_provider.dart';
 import 'package:sahayogseva/screens/worker/worker_new_job_request_screen.dart';
 import 'package:sahayogseva/screens/worker/worker_job_details_screen.dart';
 import 'package:sahayogseva/screens/worker/worker_job_response_result_screen.dart';
@@ -77,6 +80,9 @@ Widget flowApp({
         ChangeNotifierProvider<WorkerJobProvider>.value(value: workerJobProvider)
       else
         ChangeNotifierProvider(create: (_) => WorkerJobProvider()),
+      ChangeNotifierProvider(create: (_) => WalletProvider()),
+      ChangeNotifierProvider(create: (_) => WorkerProfileProvider()),
+      ChangeNotifierProvider(create: (_) => RegistrationProvider()),
     ],
     child: MaterialApp(
       initialRoute: initialRoute,

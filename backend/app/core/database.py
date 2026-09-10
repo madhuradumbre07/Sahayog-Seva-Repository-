@@ -3,6 +3,14 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 from app.core.config import settings
+import app.models.wallet  # noqa: F401
+import app.models.user  # noqa: F401
+import app.models.cooperative  # noqa: F401
+import app.models.worker  # noqa: F401
+import app.models.worker_profile  # noqa: F401
+import app.models.booking  # noqa: F401
+import app.models.job  # noqa: F401
+import app.models.payment_rating  # noqa: F401
 
 # Engine configuration
 connect_args = {}
@@ -28,8 +36,56 @@ async def init_db():
         try:
             if settings.DATABASE_URL.startswith("postgresql"):
                 await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_registered BOOLEAN DEFAULT TRUE;"))
+                await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN IF NOT EXISTS email VARCHAR;"))
+                await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN IF NOT EXISTS location VARCHAR;"))
+                await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN IF NOT EXISTS rating_avg FLOAT;"))
+                await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN IF NOT EXISTS review_count INTEGER;"))
+                await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN IF NOT EXISTS availability_status VARCHAR DEFAULT 'OFFLINE';"))
+                await conn.execute(text("ALTER TABLE workers ADD COLUMN IF NOT EXISTS user_id VARCHAR;"))
+                await conn.execute(text("ALTER TABLE worker_jobs ADD COLUMN IF NOT EXISTS worker_user_id VARCHAR;"))
+                await conn.execute(text("ALTER TABLE worker_jobs ADD COLUMN IF NOT EXISTS booking_id VARCHAR;"))
+                await conn.execute(text("ALTER TABLE worker_jobs ADD COLUMN IF NOT EXISTS assigned_worker_id INTEGER;"))
             elif settings.DATABASE_URL.startswith("sqlite"):
-                await conn.execute(text("ALTER TABLE users ADD COLUMN is_registered BOOLEAN DEFAULT 1;"))
+                try:
+                    await conn.execute(text("ALTER TABLE users ADD COLUMN is_registered BOOLEAN DEFAULT 1;"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN email TEXT;"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN location TEXT;"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN rating_avg REAL;"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN review_count INTEGER;"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(text("ALTER TABLE worker_profiles ADD COLUMN availability_status TEXT;"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(text("ALTER TABLE workers ADD COLUMN user_id TEXT;"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(text("ALTER TABLE worker_jobs ADD COLUMN worker_user_id TEXT;"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(text("ALTER TABLE worker_jobs ADD COLUMN booking_id TEXT;"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(text("ALTER TABLE worker_jobs ADD COLUMN assigned_worker_id INTEGER;"))
+                except Exception:
+                    pass
         except Exception:
             pass
 

@@ -9,6 +9,7 @@ from app.api.v1.ratings import router as ratings_router
 from app.api.v1.invoices import router as invoices_router
 from app.api.v1.jobs import router as jobs_router, legacy_router as legacy_jobs_router
 from app.api.v1.cooperative import router as cooperative_router
+from app.api.v1.wallet import router as wallet_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
@@ -17,6 +18,7 @@ api_router.include_router(matching_router)
 api_router.include_router(workers_router)
 api_router.include_router(bookings_router)
 api_router.include_router(payments_router)
+api_router.include_router(wallet_router)
 api_router.include_router(ratings_router)
 api_router.include_router(invoices_router)
 api_router.include_router(jobs_router)

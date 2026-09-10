@@ -1,85 +1,120 @@
 import 'package:flutter/material.dart';
 
+import 'worker_job_model.dart';
+
 enum WorkerAvailability { online, busy, offline }
 
 class JobRequestItem {
   const JobRequestItem({
     required this.id,
-    required this.titleKey,
-    required this.categoryKey,
+    required this.title,
+    required this.category,
     required this.location,
     required this.distanceText,
     required this.priceRange,
-    required this.timeAgoKey,
     required this.customerName,
-    this.initialCountdownSeconds = 165, // 02:45
+    this.titleKey = '',
+    this.categoryKey = '',
+    this.timeAgoKey = '',
+    this.initialCountdownSeconds = 0,
   });
 
   final String id;
-  final String titleKey;
-  final String categoryKey;
+  final String title;
+  final String category;
   final String location;
   final String distanceText;
   final String priceRange;
-  final String timeAgoKey;
   final String customerName;
+  final String titleKey;
+  final String categoryKey;
+  final String timeAgoKey;
   final int initialCountdownSeconds;
 
-  static const sample = JobRequestItem(
-    id: 'job_req_101',
-    titleKey: 'tapFaucetRepair',
-    categoryKey: 'servicePlumber',
-    location: 'Ganesh Apts, Warje, Pune',
-    distanceText: '1.2 km away',
-    priceRange: '₹250 - ₹500',
-    timeAgoKey: 'jobExpiringIn',
-    customerName: 'Pooja Deshmukh',
-  );
+  factory JobRequestItem.fromJob(WorkerJobDetailModel job) {
+    final min = job.pricing.totalMin;
+    final max = job.pricing.totalMax;
+    final price = min == max ? '₹$min' : '₹$min - ₹$max';
+    return JobRequestItem(
+      id: job.id,
+      title: job.problemTitleKey,
+      category: job.serviceCategoryKey,
+      location: job.addressLineRaw.isNotEmpty ? job.addressLineRaw : job.addressLineKey,
+      distanceText: job.distanceKm > 0 ? '${job.distanceKm.toStringAsFixed(1)} km away' : '',
+      priceRange: price,
+      customerName: job.customer.name,
+      titleKey: job.problemTitleKey,
+      categoryKey: job.serviceCategoryKey,
+      initialCountdownSeconds: job.countdownSeconds,
+    );
+  }
 }
 
 class AppointmentItem {
   const AppointmentItem({
     required this.id,
     required this.timeText,
-    required this.titleKey,
+    required this.title,
     required this.location,
     required this.statusKey,
     required this.statusColor,
     required this.statusBgColor,
     required this.customerName,
+    this.titleKey = '',
   });
 
   final String id;
   final String timeText;
-  final String titleKey;
+  final String title;
   final String location;
   final String statusKey;
   final Color statusColor;
   final Color statusBgColor;
   final String customerName;
+  final String titleKey;
 
-  static const List<AppointmentItem> defaults = [
-    AppointmentItem(
-      id: 'apt_1',
-      timeText: '11:00 AM',
-      titleKey: 'appointment1Title',
-      location: 'Kothrud, Pune',
-      statusKey: 'statusOnTheWay',
-      statusColor: Color(0xFF2E7D32),
-      statusBgColor: Color(0xFFE8F5E9),
-      customerName: 'Amit Joshi',
-    ),
-    AppointmentItem(
-      id: 'apt_2',
-      timeText: '03:30 PM',
-      titleKey: 'appointment2Title',
-      location: 'Kothrud, Pune',
+  factory AppointmentItem.fromJob(WorkerJobDetailModel job) {
+    final status = _statusFor(job.lifecycleState);
+    return AppointmentItem(
+      id: job.id,
+      timeText: job.scheduledTimeKey.isNotEmpty ? job.scheduledTimeKey : '--',
+      title: job.problemTitleKey,
+      titleKey: job.problemTitleKey,
+      location: job.addressLineRaw.isNotEmpty ? job.addressLineRaw : job.addressLineKey,
+      statusKey: status.$1,
+      statusColor: status.$2,
+      statusBgColor: status.$3,
+      customerName: job.customer.name,
+    );
+  }
+
+  factory AppointmentItem.fromRequest(JobRequestItem request) {
+    return AppointmentItem(
+      id: request.id,
+      timeText: '--',
+      title: request.title,
+      titleKey: request.titleKey,
+      location: request.location,
       statusKey: 'statusUpcoming',
-      statusColor: Color(0xFFE65100),
-      statusBgColor: Color(0xFFFFF3E0),
-      customerName: 'Sunita Kulkarni',
-    ),
-  ];
+      statusColor: const Color(0xFFE65100),
+      statusBgColor: const Color(0xFFFFF3E0),
+      customerName: request.customerName,
+    );
+  }
+
+  static (String, Color, Color) _statusFor(WorkerJobLifecycleState state) {
+    switch (state) {
+      case WorkerJobLifecycleState.navigating:
+        return ('statusOnTheWay', const Color(0xFF2E7D32), const Color(0xFFE8F5E9));
+      case WorkerJobLifecycleState.inProgress:
+      case WorkerJobLifecycleState.arrivedOtp:
+        return ('statusInProgress', const Color(0xFF1565C0), const Color(0xFFE3F2FD));
+      case WorkerJobLifecycleState.accepted:
+        return ('statusUpcoming', const Color(0xFFE65100), const Color(0xFFFFF3E0));
+      default:
+        return ('statusUpcoming', const Color(0xFFE65100), const Color(0xFFFFF3E0));
+    }
+  }
 }
 
 class WorkerMetrics {
@@ -97,52 +132,11 @@ class WorkerMetrics {
   final double rating;
   final int reviewsCount;
 
-  static const sample = WorkerMetrics(
-    todayEarnings: 1250,
-    completedJobsToday: 2,
-    monthlyEarnings: 28450,
-    rating: 4.8,
-    reviewsCount: 156,
+  static const empty = WorkerMetrics(
+    todayEarnings: 0,
+    completedJobsToday: 0,
+    monthlyEarnings: 0,
+    rating: 0,
+    reviewsCount: 0,
   );
-}
-
-class QuickActionItem {
-  const QuickActionItem({
-    required this.id,
-    required this.titleKey,
-    required this.icon,
-    required this.color,
-  });
-
-  final String id;
-  final String titleKey;
-  final IconData icon;
-  final Color color;
-
-  static const List<QuickActionItem> defaults = [
-    QuickActionItem(
-      id: 'availability',
-      titleKey: 'quickAvailability',
-      icon: Icons.access_time_filled,
-      color: Color(0xFF0D47A1),
-    ),
-    QuickActionItem(
-      id: 'history',
-      titleKey: 'quickJobHistory',
-      icon: Icons.history,
-      color: Color(0xFF0D47A1),
-    ),
-    QuickActionItem(
-      id: 'earnings',
-      titleKey: 'quickEarnings',
-      icon: Icons.account_balance_wallet,
-      color: Color(0xFF0D47A1),
-    ),
-    QuickActionItem(
-      id: 'profile',
-      titleKey: 'quickProfile',
-      icon: Icons.person,
-      color: Color(0xFF0D47A1),
-    ),
-  ];
 }

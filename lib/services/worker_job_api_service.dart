@@ -12,10 +12,11 @@ class WorkerJobApiService {
 
   WorkerJobApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  Future<List<WorkerJobDetailModel>> fetchPendingJobs() async {
-    final response = await _client
-        .get(Uri.parse('${ApiConfig.baseUrl}/worker/jobs/requests/pending'))
-        .timeout(requestTimeout);
+  Future<List<WorkerJobDetailModel>> fetchPendingJobs({String? workerId}) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/worker/jobs/requests/pending').replace(
+      queryParameters: workerId != null && workerId.isNotEmpty ? {'worker_id': workerId} : null,
+    );
+    final response = await _client.get(uri).timeout(requestTimeout);
     _ensureSuccess(response);
     return (jsonDecode(response.body) as List<dynamic>)
         .map((item) => WorkerJobDetailModel.fromJson(item as Map<String, dynamic>))

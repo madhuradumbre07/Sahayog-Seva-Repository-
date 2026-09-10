@@ -40,6 +40,9 @@ class Booking(BookingBase, table=True):
 
 class BookingCreateRequest(SQLModel):
     worker_id: int
+    customer_id: Optional[str] = None
+    customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
     service_category: str
     service_subcategory: str
     problem_description: str

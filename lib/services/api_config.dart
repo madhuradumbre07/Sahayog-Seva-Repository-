@@ -20,7 +20,7 @@ class ApiConfig {
     }
 
     // Windows desktop, macOS, Linux, Chrome Web
-    return 'http://127.0.0.1:8000/api/v1';
+    return 'http://localhost:8000/api/v1';
   }
 
   static String _normalize(String url) {

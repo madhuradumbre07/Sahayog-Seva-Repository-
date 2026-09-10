@@ -1,40 +1,61 @@
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 
 client = TestClient(app)
 
+
+def _create_job(worker_user_id="WORKER-JOB-TEST", **overrides):
+    payload = {
+        "worker_user_id": worker_user_id,
+        "customer_id": "CUST-TEST",
+        "customer_name": "Test Customer",
+        "service_category": "Plumbing",
+        "service_subcategory": "Tap Repair",
+        "problem_description": "Leaking tap",
+        "address_line": "Warje, Pune",
+        "total_min": 250,
+        "total_max": 500,
+        **overrides,
+    }
+    response = client.post("/api/v1/worker/jobs", json=payload)
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
 def test_get_pending_jobs():
-    response = client.get("/api/v1/jobs/requests/pending")
+    created = _create_job()
+    response = client.get("/api/v1/jobs/requests/pending", params={"worker_id": "WORKER-JOB-TEST"})
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) >= 1
-    assert data[0]["id"] == "REQ-250531-0178"
-    assert data[0]["priority"] == "HIGH"
-    assert "customer" in data[0]
+    assert any(item["id"] == created["id"] for item in data)
+    assert "customer" in created
+
 
 def test_get_job_details():
-    response = client.get("/api/v1/jobs/REQ-250531-0178")
+    created = _create_job(worker_user_id="WORKER-JOB-DETAIL")
+    response = client.get(f"/api/v1/jobs/{created['id']}")
     assert response.status_code == 200
     data = response.json()
-    assert data["id"] == "REQ-250531-0178"
-    assert data["customer"]["name"] == "Sandeep Patil"
-    assert len(data["scope_of_work"]) == 5
-    assert len(data["required_tools"]) == 5
+    assert data["id"] == created["id"]
+    assert data["customer"]["name"] == "Test Customer"
     assert data["pricing"]["total_min"] == 250
     assert data["pricing"]["total_max"] == 500
 
+
 def test_accept_job():
-    response = client.post("/api/v1/jobs/REQ-250531-0178/accept")
+    created = _create_job(worker_user_id="WORKER-JOB-ACCEPT")
+    response = client.post(f"/api/v1/jobs/{created['id']}/accept")
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
     assert data["status"] == "ACCEPTED"
     assert data["message_key"] == "jobAcceptedSuccessToast"
 
+
 def test_reject_job():
-    response = client.post("/api/v1/jobs/REQ-250531-0179/reject")
+    created = _create_job(worker_user_id="WORKER-JOB-REJECT")
+    response = client.post(f"/api/v1/jobs/{created['id']}/reject")
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True

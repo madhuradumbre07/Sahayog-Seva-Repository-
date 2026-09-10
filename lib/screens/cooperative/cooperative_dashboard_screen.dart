@@ -10,6 +10,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../widgets/handshake_logo.dart';
 import '../../widgets/language_selector_button.dart';
+import '../admin/admin_worker_verification_screen.dart';
 
 class CooperativeDashboardScreen extends StatefulWidget {
   const CooperativeDashboardScreen({super.key});
@@ -85,7 +86,9 @@ class _CooperativeDashboardScreenState extends State<CooperativeDashboardScreen>
                     _buildMembersAndUpcomingSection(context, data),
                     const SizedBox(height: 22),
 
-                    // 10. 2x2 Quick Actions
+                    // 10. Worker Verification Queue & 2x2 Quick Actions
+                    _buildWorkerVerificationBanner(context),
+                    const SizedBox(height: 14),
                     _buildQuickActionsSection(context, data.quickActions),
                     const SizedBox(height: 24),
 
@@ -1596,6 +1599,55 @@ class _CooperativeDashboardScreenState extends State<CooperativeDashboardScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildWorkerVerificationBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.verified_user, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Worker Verification Queue',
+                  style: AppTypography.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF1E3A8A)),
+                ),
+                Text(
+                  'Review and verify pending worker applications',
+                  style: AppTypography.poppins(fontSize: 11, color: const Color(0xFF3B82F6)),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pushNamed(context, AdminWorkerVerificationScreen.routeName),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Review', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 

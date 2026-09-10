@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:sahayogseva/models/worker_dashboard_data.dart';
 import 'package:sahayogseva/models/workspace_role.dart';
 import 'package:sahayogseva/providers/auth_provider.dart';
 import 'package:sahayogseva/providers/customer_dashboard_provider.dart';
 import 'package:sahayogseva/providers/language_provider.dart';
 import 'package:sahayogseva/providers/worker_dashboard_provider.dart';
+import 'package:sahayogseva/providers/worker_profile_provider.dart';
 import 'package:sahayogseva/screens/dashboard/dashboard_shell.dart';
+import 'package:sahayogseva/services/worker_job_api_service.dart';
 import 'package:sahayogseva/widgets/ai_assist_sheet.dart';
 import 'package:sahayogseva/widgets/customer/ai_problem_card.dart';
 import 'package:sahayogseva/widgets/customer/greeting_header.dart';
@@ -25,6 +28,14 @@ import 'package:sahayogseva/widgets/workspace_switcher_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'test_app.dart';
+
+class _FakeWorkerJobApi extends WorkerJobApiService {
+  @override
+  Future<bool> acceptJob(String jobId) async => true;
+
+  @override
+  Future<bool> rejectJob(String jobId) async => true;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -131,26 +142,24 @@ void main() {
 
       // Verify Worker Dashboard is now rendered
       expect(find.byType(WorkerProfileHeader), findsOneWidget);
-      expect(find.textContaining('राहुल शर्मा'), findsOneWidget);
-      expect(find.textContaining('Verified'), findsOneWidget);
 
       // Availability Status Card
       expect(find.byType(AvailabilityStatusCard), findsOneWidget);
       expect(find.byType(Switch), findsOneWidget);
 
-      // Job Request Alert Card
+      // Job request card is present (empty until backend jobs load)
       expect(find.byType(JobRequestAlertCard), findsOneWidget);
-      expect(find.textContaining('Tap / Faucet Repair'), findsOneWidget);
-      expect(find.text('Accept'), findsOneWidget);
-      expect(find.text('Reject'), findsOneWidget);
+      expect(find.text('Accept'), findsNothing);
 
       // Today's Appointments Timeline Card
       expect(find.byType(AppointmentTimelineCard), findsOneWidget);
 
-      // Metrics summary
+      // Metrics summary from backend (zero until completed jobs exist)
       await tester.ensureVisible(find.byType(MetricsSummaryCard));
       expect(find.byType(MetricsSummaryCard), findsOneWidget);
-      expect(find.textContaining('1,250'), findsOneWidget);
+      expect(find.text('Availability'), findsNothing);
+      expect(find.text('Job History'), findsNothing);
+      expect(find.text('My Profile'), findsNothing);
     });
 
     testWidgets('worker can accept job request and toggle availability', (
@@ -158,6 +167,19 @@ void main() {
     ) async {
       final auth = AuthProvider();
       auth.setActiveRole(WorkspaceRoleId.worker);
+      final dash = WorkerDashboardProvider(jobApi: _FakeWorkerJobApi());
+      await dash.setAvailability(WorkerAvailability.online);
+      dash.debugSetPendingRequests(const [
+        JobRequestItem(
+          id: 'job_test_1',
+          title: 'Tap / Faucet Repair',
+          category: 'Plumbing',
+          location: 'Warje, Pune',
+          distanceText: '',
+          priceRange: '₹250',
+          customerName: 'Test Customer',
+        ),
+      ]);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -165,7 +187,8 @@ void main() {
             ChangeNotifierProvider(create: (_) => LanguageProvider()),
             ChangeNotifierProvider<AuthProvider>.value(value: auth),
             ChangeNotifierProvider(create: (_) => CustomerDashboardProvider()),
-            ChangeNotifierProvider(create: (_) => WorkerDashboardProvider()),
+            ChangeNotifierProvider<WorkerDashboardProvider>.value(value: dash),
+            ChangeNotifierProvider(create: (_) => WorkerProfileProvider()),
           ],
           child: MaterialApp(
             home: const DashboardShell(),
@@ -174,7 +197,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Accept the pending request
       expect(find.text('Accept'), findsOneWidget);
       await tester.tap(find.text('Accept'));
       await tester.pumpAndSettle();

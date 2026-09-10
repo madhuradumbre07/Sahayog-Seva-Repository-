@@ -43,14 +43,9 @@ async def find_workers(
     coops = coop_res.scalars().all()
     coops_by_id = {c.id: c for c in coops}
     
-    # If DB is empty, generate mock workers on-the-fly
-    if not workers:
-        from seed_data import generate_synthetic_workers, generate_synthetic_cooperatives
-        coops_list = generate_synthetic_cooperatives()
-        workers_list = generate_synthetic_workers(coops_list)
-        coops_by_id = {c.id or (i+1): c for i, c in enumerate(coops_list)}
-        workers = workers_list
-        
+    verified_workers = [w for w in workers if getattr(w, "is_verified", False)]
+    workers = verified_workers
+
     # Execute fair matching engine
     ranked_workers = FairAllocationEngine.rank_workers(
         workers=list(workers),

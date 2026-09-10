@@ -133,6 +133,21 @@ class JobCustomerInfo {
     this.memberDurationKey = 'memberTwoMonthsAgo',
   });
 
+  static const empty = JobCustomerInfo(
+    id: '',
+    name: 'Customer',
+    nameKey: '',
+    avatarUrl: '',
+    rating: 0,
+    reviewsCount: 0,
+    phone: '',
+    isVerified: false,
+    totalBookings: 0,
+    completedBookings: 0,
+    cancelledBookings: 0,
+    memberDurationKey: '',
+  );
+
   static const sample = JobCustomerInfo(
     id: 'CUST-9842',
     name: 'Sandeep Patil',
@@ -150,18 +165,18 @@ class JobCustomerInfo {
 
   factory JobCustomerInfo.fromJson(Map<String, dynamic> json) {
     return JobCustomerInfo(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      nameKey: json['name_key'] as String,
-      avatarUrl: json['avatar_url'] as String,
-      rating: (json['rating'] as num).toDouble(),
-      reviewsCount: json['reviews_count'] as int,
-      phone: json['phone'] as String,
-      isVerified: json['is_verified'] as bool? ?? true,
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? 'Customer',
+      nameKey: json['name_key'] as String? ?? (json['name'] as String? ?? ''),
+      avatarUrl: json['avatar_url'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      reviewsCount: (json['reviews_count'] as num?)?.toInt() ?? 0,
+      phone: json['phone'] as String? ?? '',
+      isVerified: json['is_verified'] as bool? ?? false,
       totalBookings: json['total_bookings'] as int? ?? 0,
       completedBookings: json['completed_bookings'] as int? ?? 0,
       cancelledBookings: json['cancelled_bookings'] as int? ?? 0,
-      memberDurationKey: json['membership_duration_key'] as String? ?? 'memberTwoMonthsAgo',
+      memberDurationKey: json['membership_duration_key'] as String? ?? '',
     );
   }
 }
@@ -351,43 +366,66 @@ class WorkerJobDetailModel {
   factory WorkerJobDetailModel.fromJson(Map<String, dynamic> json) {
     final status = json['status'] as String? ?? 'PENDING';
     final lifecycle = WorkerJobLifecycleState.fromApi(status);
+    String str(String key, [String fallback = '']) => json[key] as String? ?? fallback;
+    List<dynamic> list(String key) => json[key] as List<dynamic>? ?? const [];
     return WorkerJobDetailModel(
       lifecycleState: lifecycle,
-      id: json['id'] as String,
+      id: str('id'),
       priority: JobPriority.values.firstWhere(
-        (item) => item.name.toUpperCase() == (json['priority'] as String? ?? 'HIGH'),
-        orElse: () => JobPriority.high,
+        (item) => item.name.toUpperCase() == (json['priority'] as String? ?? 'MEDIUM'),
+        orElse: () => JobPriority.medium,
       ),
-      state: lifecycle == WorkerJobLifecycleState.accepted ? JobRequestState.youAccepted : JobRequestState.normal,
-      countdownSeconds: json['countdown_seconds'] as int? ?? 0,
-      serviceCategoryKey: json['service_category_key'] as String,
-      serviceSubcategoryKey: json['service_subcategory_key'] as String,
-      problemTitleKey: json['problem_title_key'] as String,
-      problemDescriptionKey: json['problem_description_key'] as String,
-      aiAnalysisKey: json['ai_analysis_key'] as String,
-      difficultyKey: json['difficulty_key'] as String,
-      estimatedDurationKey: json['estimated_duration_key'] as String,
-      addressLineKey: json['address_line_key'] as String,
-      addressLineRaw: json['address_line_raw'] as String,
-      premiseTypeKey: json['premise_type_key'] as String,
-      floorKey: json['floor_key'] as String,
-      distanceKm: (json['distance_km'] as num).toDouble(),
-      workerLatitude: (json['worker_latitude'] as num).toDouble(),
-      workerLongitude: (json['worker_longitude'] as num).toDouble(),
-      customerLatitude: (json['customer_latitude'] as num).toDouble(),
-      customerLongitude: (json['customer_longitude'] as num).toDouble(),
-      scheduledTimeKey: json['scheduled_time_key'] as String,
-      scheduledFlexibilityKey: json['scheduled_flexibility_key'] as String,
-      customerNoteKey: json['customer_note_key'] as String,
-      customer: JobCustomerInfo.fromJson(json['customer'] as Map<String, dynamic>),
-      pricing: JobPricingBreakdown.fromJson(json['pricing'] as Map<String, dynamic>),
-      scopeOfWork: (json['scope_of_work'] as List<dynamic>).map((item) => JobScopeItem.fromJson(item as Map<String, dynamic>)).toList(),
-      requiredTools: (json['required_tools'] as List<dynamic>).map((item) => JobToolItem.fromJson(item as Map<String, dynamic>)).toList(),
-      materials: (json['materials'] as List<dynamic>).map((item) => JobMaterialItem.fromJson(item as Map<String, dynamic>)).toList(),
-      safetyGuidelines: (json['safety_guidelines'] as List<dynamic>).cast<String>(),
-      paymentMethodKey: json['payment_method_key'] as String,
-      cancellationPolicyKey: json['cancellation_policy_key'] as String,
-      supportAvailabilityKey: json['support_availability_key'] as String,
+      state: lifecycle == WorkerJobLifecycleState.accepted
+          ? JobRequestState.youAccepted
+          : lifecycle == WorkerJobLifecycleState.rejected
+              ? JobRequestState.youRejected
+              : JobRequestState.normal,
+      countdownSeconds: (json['countdown_seconds'] as num?)?.toInt() ?? 0,
+      serviceCategoryKey: str('service_category_key'),
+      serviceSubcategoryKey: str('service_subcategory_key'),
+      problemTitleKey: str('problem_title_key'),
+      problemDescriptionKey: str('problem_description_key'),
+      aiAnalysisKey: str('ai_analysis_key'),
+      difficultyKey: str('difficulty_key'),
+      estimatedDurationKey: str('estimated_duration_key'),
+      addressLineKey: str('address_line_key'),
+      addressLineRaw: str('address_line_raw'),
+      premiseTypeKey: str('premise_type_key'),
+      floorKey: str('floor_key'),
+      distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0,
+      workerLatitude: (json['worker_latitude'] as num?)?.toDouble() ?? 0,
+      workerLongitude: (json['worker_longitude'] as num?)?.toDouble() ?? 0,
+      customerLatitude: (json['customer_latitude'] as num?)?.toDouble() ?? 0,
+      customerLongitude: (json['customer_longitude'] as num?)?.toDouble() ?? 0,
+      scheduledTimeKey: str('scheduled_time_key'),
+      scheduledFlexibilityKey: str('scheduled_flexibility_key'),
+      customerNoteKey: str('customer_note_key'),
+      customer: json['customer'] is Map<String, dynamic>
+          ? JobCustomerInfo.fromJson(json['customer'] as Map<String, dynamic>)
+          : JobCustomerInfo(
+              id: '',
+              name: str('customer_name', 'Customer'),
+              nameKey: '',
+              avatarUrl: '',
+              rating: 0,
+              reviewsCount: 0,
+              phone: '',
+              isVerified: false,
+              totalBookings: 0,
+              completedBookings: 0,
+              cancelledBookings: 0,
+              memberDurationKey: '',
+            ),
+      pricing: json['pricing'] is Map<String, dynamic>
+          ? JobPricingBreakdown.fromJson(json['pricing'] as Map<String, dynamic>)
+          : const JobPricingBreakdown(laborMin: 0, laborMax: 0, visitingMin: 0, visitingMax: 0, materialsMin: 0, materialsMax: 0, totalMin: 0, totalMax: 0),
+      scopeOfWork: list('scope_of_work').map((item) => JobScopeItem.fromJson(item as Map<String, dynamic>)).toList(),
+      requiredTools: list('required_tools').map((item) => JobToolItem.fromJson(item as Map<String, dynamic>)).toList(),
+      materials: list('materials').map((item) => JobMaterialItem.fromJson(item as Map<String, dynamic>)).toList(),
+      safetyGuidelines: list('safety_guidelines').cast<String>(),
+      paymentMethodKey: str('payment_method_key'),
+      cancellationPolicyKey: str('cancellation_policy_key'),
+      supportAvailabilityKey: str('support_availability_key'),
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/workspace_role.dart';
 import '../providers/auth_provider.dart';
 import '../providers/registration_provider.dart';
+import '../providers/worker_profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
@@ -138,6 +139,23 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     if (!mounted) return;
 
     if (success) {
+      if (widget.role == WorkspaceRoleId.worker) {
+        final workerProvider = context.read<WorkerProfileProvider>();
+        final workerId = auth.backendUserId;
+        final skillsList = _workCategoryController.text.isNotEmpty
+            ? _workCategoryController.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList()
+            : null;
+        await workerProvider.updateProfile(
+          workerId: workerId,
+          fullName: name,
+          email: email.isNotEmpty ? email : null,
+          location: location.isNotEmpty ? location : null,
+          skills: skillsList,
+        );
+      }
+
+      if (!mounted) return;
+
       auth.updateProfileData(
         customerName: widget.role == WorkspaceRoleId.customer ? name : null,
         workerName: widget.role == WorkspaceRoleId.worker ? name : null,

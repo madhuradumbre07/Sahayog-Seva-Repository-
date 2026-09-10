@@ -2,11 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/worker_dashboard_provider.dart';
 import '../../../theme/app_typography.dart';
 
-class WorkerEarningsView extends StatelessWidget {
+class WorkerEarningsView extends StatefulWidget {
   const WorkerEarningsView({super.key});
+
+  @override
+  State<WorkerEarningsView> createState() => _WorkerEarningsViewState();
+}
+
+class _WorkerEarningsViewState extends State<WorkerEarningsView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final id = context.read<AuthProvider>().backendUserId;
+      if (id.isNotEmpty) {
+        context.read<WorkerDashboardProvider>().loadDashboard(id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +40,11 @@ class WorkerEarningsView extends StatelessWidget {
             style: AppTypography.heading(fontSize: 20),
           ),
           const SizedBox(height: 16),
+          if (metrics.reviewsCount > 0)
+            Text(
+              'Rating ${metrics.rating} (${metrics.reviewsCount} reviews)',
+              style: AppTypography.subtitle(fontSize: 13),
+            ),
 
           // Total Earnings Card
           Container(

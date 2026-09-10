@@ -5,9 +5,12 @@ import '../../../l10n/l10n.dart';
 import '../../../models/workspace_role.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/registration_provider.dart';
+import '../../../providers/wallet_provider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/edit_profile_dialog.dart';
+import '../../../widgets/wallet_top_up_modal.dart';
+import '../../../widgets/wallet_transactions_sheet.dart';
 import '../../../widgets/workspace_switcher_sheet.dart';
 
 class CustomerProfileView extends StatefulWidget {
@@ -23,6 +26,9 @@ class _CustomerProfileViewState extends State<CustomerProfileView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<RegistrationProvider>().loadSavedProfile(WorkspaceRoleId.customer);
+      final auth = context.read<AuthProvider>();
+      final userId = auth.phoneDigits.isNotEmpty ? auth.phoneDigits : 'CUST-9842';
+      context.read<WalletProvider>().refreshWallet(userId);
     });
   }
 
@@ -30,6 +36,7 @@ class _CustomerProfileViewState extends State<CustomerProfileView> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final reg = context.watch<RegistrationProvider>();
+    final wallet = context.watch<WalletProvider>();
 
     final displayName = reg.fullName.isNotEmpty
         ? reg.fullName
@@ -138,7 +145,7 @@ class _CustomerProfileViewState extends State<CustomerProfileView> {
                       style: AppTypography.subtitle(fontSize: 12),
                     ),
                     Text(
-                      '₹ 1,250.00',
+                      '₹ ${wallet.balance.toStringAsFixed(2)}',
                       style: AppTypography.heading(fontSize: 20).copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -147,7 +154,7 @@ class _CustomerProfileViewState extends State<CustomerProfileView> {
                   ],
                 ),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => WalletTopUpModal.show(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -195,7 +202,7 @@ class _CustomerProfileViewState extends State<CustomerProfileView> {
             context,
             Icons.history,
             context.tr('paymentHistory'),
-            onTap: () {},
+            onTap: () => WalletTransactionsSheet.show(context),
           ),
           _tile(
             context,
@@ -259,4 +266,3 @@ class _CustomerProfileViewState extends State<CustomerProfileView> {
     );
   }
 }
-

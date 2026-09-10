@@ -120,7 +120,18 @@ class JobRequestDetail(BaseModel):
 
     @classmethod
     def from_record(cls, record: "WorkerJobRecord") -> "JobRequestDetail":
-        values = record.model_dump(exclude={"id", "status", "created_at", "updated_at"})
+        values = record.model_dump(
+            exclude={
+                "id",
+                "status",
+                "created_at",
+                "updated_at",
+                "otp_code",
+                "worker_user_id",
+                "booking_id",
+                "assigned_worker_id",
+            }
+        )
         values.update(id=record.id, status=record.status)
         return cls(**values)
 
@@ -161,6 +172,9 @@ class WorkerJobRecord(SQLModel, table=True):
     cancellation_policy_key: str = "jobCancelPolicy2Hours"
     support_availability_key: str = "support24x7Available"
     otp_code: str = "4289"
+    worker_user_id: Optional[str] = Field(default=None, index=True)
+    booking_id: Optional[str] = Field(default=None, index=True)
+    assigned_worker_id: Optional[int] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

@@ -1,5 +1,7 @@
+from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import Optional, List
+from sqlmodel import SQLModel, Field as SQLField
 
 class PaymentProcessRequest(BaseModel):
     booking_id: str = Field(..., json_schema_extra={"example": "SHS-842109"})
@@ -23,6 +25,17 @@ class RatingSubmitRequest(BaseModel):
     rating: float = Field(..., ge=1.0, le=5.0, json_schema_extra={"example": 5.0})
     review_text: Optional[str] = Field(default="", max_length=500, json_schema_extra={"example": "Excellent tap repair service!"})
     tags: Optional[List[str]] = Field(default_factory=list, json_schema_extra={"example": ["Punctual", "Clean Work"]})
+
+class WorkerReview(SQLModel, table=True):
+    __tablename__ = "worker_reviews"
+
+    id: Optional[int] = SQLField(default=None, primary_key=True)
+    booking_id: str
+    worker_id: int
+    rating: float
+    review_text: str = ""
+    created_at: datetime = SQLField(default_factory=datetime.utcnow)
+
 
 class RatingSubmitResponse(BaseModel):
     status: str = "RATED"

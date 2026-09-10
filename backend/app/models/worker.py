@@ -2,6 +2,13 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 import json
+from app.models.worker_profile import (
+    WorkerProfile,
+    WorkerProfileCreate,
+    WorkerProfileRead,
+    WorkerProfileUpdate,
+    WorkerProfileVerifyRequest,
+)
 
 class WorkerBase(SQLModel):
     cooperative_id: Optional[int] = Field(default=None, foreign_key="cooperatives.id")
@@ -64,6 +71,7 @@ class Worker(WorkerBase, table=True):
     __tablename__ = "workers"
 
     id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: Optional[str] = Field(default=None, index=True, description="Firebase UID or phone digits")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     last_assigned_at: Optional[datetime] = None
 

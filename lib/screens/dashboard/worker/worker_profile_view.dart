@@ -5,10 +5,12 @@ import '../../../l10n/l10n.dart';
 import '../../../models/workspace_role.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/registration_provider.dart';
+import '../../../providers/worker_profile_provider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/edit_profile_dialog.dart';
 import '../../../widgets/workspace_switcher_sheet.dart';
+import '../../worker/worker_registration_screen.dart';
 
 class WorkerProfileView extends StatefulWidget {
   const WorkerProfileView({super.key});
@@ -23,6 +25,9 @@ class _WorkerProfileViewState extends State<WorkerProfileView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<RegistrationProvider>().loadSavedProfile(WorkspaceRoleId.worker);
+      final auth = context.read<AuthProvider>();
+      final userId = auth.backendUserId;
+      context.read<WorkerProfileProvider>().loadProfile(userId);
     });
   }
 
@@ -30,18 +35,31 @@ class _WorkerProfileViewState extends State<WorkerProfileView> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final reg = context.watch<RegistrationProvider>();
+    final workerProvider = context.watch<WorkerProfileProvider>();
+    final profile = workerProvider.currentProfile;
 
-    final displayName = reg.fullName.isNotEmpty
-        ? reg.fullName
-        : auth.localizedWorkerName(context);
-    final displayPhone = reg.mobile.isNotEmpty
-        ? (reg.mobile.length == 10 ? '+91 ${reg.mobile.substring(0, 5)} ${reg.mobile.substring(5)}' : '+91 ${reg.mobile}')
-        : (auth.formattedPhone.isNotEmpty ? auth.formattedPhone : '+91 98765 43210');
-    final displayCategory = reg.workCategory.isNotEmpty
-        ? reg.effectiveWorkCategory
-        : auth.localizedWorkerTradeSubtitle(context);
-    final displayLocation = reg.location;
-    final displayEmail = reg.email.isNotEmpty ? reg.email : auth.registeredEmail;
+    // Fully Backend-Driven Data Mapping (No Hardcoded Fallback Strings)
+    final displayName = profile?['full_name'] as String? ??
+        (reg.fullName.isNotEmpty
+            ? reg.fullName
+            : (auth.workerName.isNotEmpty ? auth.workerName : 'Not added'));
+
+    final rawMobile = profile?['mobile'] as String? ?? (reg.mobile.isNotEmpty ? reg.mobile : auth.phoneDigits);
+    final displayPhone = rawMobile.isNotEmpty
+        ? (rawMobile.length == 10 ? '+91 ${rawMobile.substring(0, 5)} ${rawMobile.substring(5)}' : '+91 $rawMobile')
+        : 'Not added';
+
+    final skillsList = (profile?['skills'] as List?)?.cast<String>() ?? [];
+    final displayCategory = skillsList.isNotEmpty
+        ? skillsList.join(', ')
+        : (reg.workCategory.isNotEmpty ? reg.workCategory : 'Not added');
+
+    final displayLocation = profile?['location'] as String? ?? (reg.location.isNotEmpty ? reg.location : 'Not added');
+    final displayEmail = profile?['email'] as String? ?? (reg.email.isNotEmpty ? reg.email : (auth.registeredEmail.isNotEmpty ? auth.registeredEmail : 'Not added'));
+
+    final status = profile?['verification_status'] as String? ?? 'NOT_REGISTERED';
+    final ratingAvg = profile?['rating_avg'] as num?;
+    final reviewCount = profile?['review_count'] as num?;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16).copyWith(bottom: 80),
@@ -78,24 +96,7 @@ class _WorkerProfileViewState extends State<WorkerProfileView> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8F5E9),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              context.tr('workerVerified'),
-                              style: AppTypography.poppins(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF2E7D32),
-                              ),
-                            ),
-                          ),
+                          _buildVerificationBadge(status),
                         ],
                       ),
                       Text(
@@ -109,40 +110,39 @@ class _WorkerProfileViewState extends State<WorkerProfileView> {
                           color: const Color(0xFF16A34A),
                         ),
                       ),
-                      if (displayEmail.isNotEmpty || displayLocation.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            if (displayLocation.isNotEmpty) ...[
-                              const Icon(Icons.location_on_outlined, size: 13, color: Color(0xFF64748B)),
-                              const SizedBox(width: 2),
-                              Text(
-                                displayLocation,
-                                style: AppTypography.poppins(fontSize: 11, color: const Color(0xFF64748B)),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            if (displayEmail.isNotEmpty) ...[
-                              const Icon(Icons.email_outlined, size: 13, color: Color(0xFF64748B)),
-                              const SizedBox(width: 2),
-                              Flexible(
-                                child: Text(
-                                  displayEmail,
-                                  style: AppTypography.poppins(fontSize: 11, color: const Color(0xFF64748B)),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 13, color: Color(0xFF64748B)),
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              displayLocation,
+                              style: AppTypography.poppins(fontSize: 11, color: const Color(0xFF64748B)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.email_outlined, size: 13, color: Color(0xFF64748B)),
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              displayEmail,
+                              style: AppTypography.poppins(fontSize: 11, color: const Color(0xFF64748B)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
                           const Icon(Icons.star, color: Color(0xFFFFA000), size: 14),
                           const SizedBox(width: 4),
                           Text(
-                            context.tr('workerRating'),
+                            ratingAvg != null
+                                ? '$ratingAvg (${reviewCount ?? 0} reviews)'
+                                : 'No reviews yet',
                             style: AppTypography.subtitle(fontSize: 11),
                           ),
                         ],
@@ -160,7 +160,14 @@ class _WorkerProfileViewState extends State<WorkerProfileView> {
           ),
           const SizedBox(height: 16),
 
-          // Actions List
+          _tile(
+            context,
+            Icons.verified_user_outlined,
+            'Worker Verification & Trade Status',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.pushNamed(context, WorkerRegistrationScreen.routeName),
+            highlight: true,
+          ),
           _tile(
             context,
             Icons.person_outline,
@@ -207,6 +214,55 @@ class _WorkerProfileViewState extends State<WorkerProfileView> {
     );
   }
 
+  Widget _buildVerificationBadge(String status) {
+    Color bg;
+    Color fg;
+    String label;
+
+    switch (status) {
+      case 'VERIFIED':
+        bg = const Color(0xFFE8F5E9);
+        fg = const Color(0xFF2E7D32);
+        label = 'VERIFIED';
+        break;
+      case 'UNDER_REVIEW':
+        bg = const Color(0xFFFEF3C7);
+        fg = const Color(0xFFB45309);
+        label = 'UNDER REVIEW';
+        break;
+      case 'REJECTED':
+        bg = const Color(0xFFFEE2E2);
+        fg = const Color(0xFFB91C1C);
+        label = 'REJECTED';
+        break;
+      case 'PENDING':
+        bg = const Color(0xFFEFF6FF);
+        fg = const Color(0xFF1D4ED8);
+        label = 'PENDING VERIFICATION';
+        break;
+      default:
+        bg = const Color(0xFFF1F5F9);
+        fg = const Color(0xFF64748B);
+        label = 'NOT REGISTERED';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: AppTypography.poppins(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: fg,
+        ),
+      ),
+    );
+  }
+
   Widget _tile(
     BuildContext context,
     IconData icon,
@@ -245,4 +301,3 @@ class _WorkerProfileViewState extends State<WorkerProfileView> {
     );
   }
 }
-

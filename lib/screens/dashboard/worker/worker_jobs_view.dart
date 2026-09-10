@@ -2,12 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/worker_dashboard_provider.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/worker/job_request_alert_card.dart';
 
-class WorkerJobsView extends StatelessWidget {
+class WorkerJobsView extends StatefulWidget {
   const WorkerJobsView({super.key});
+
+  @override
+  State<WorkerJobsView> createState() => _WorkerJobsViewState();
+}
+
+class _WorkerJobsViewState extends State<WorkerJobsView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final id = context.read<AuthProvider>().backendUserId;
+      if (id.isNotEmpty) {
+        context.read<WorkerDashboardProvider>().loadDashboard(id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

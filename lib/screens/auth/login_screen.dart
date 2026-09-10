@@ -78,13 +78,19 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!online || !mounted) return;
 
     setState(() => _sending = true);
-    await Future<void>.delayed(const Duration(milliseconds: 700));
     final sent = await auth.sendOtp();
     if (!mounted) return;
     setState(() => _sending = false);
     _ensureLockTicker();
     if (sent) {
       Navigator.pushNamed(context, '/otp-verification');
+    } else if (auth.authError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.authError!),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -92,9 +98,23 @@ class _LoginScreenState extends State<LoginScreen> {
     final language = context.read<LanguageProvider>();
     final online = await language.checkConnectivity();
     if (!online || !mounted) return;
-    await context.read<AuthProvider>().signInWithGoogle();
+    final success = await context.read<AuthProvider>().signInWithGoogle();
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/workspace-selection');
+    if (success) {
+      final auth = context.read<AuthProvider>();
+      if (auth.hasSelectedRole && auth.isCurrentRoleRegistered) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        Navigator.pushReplacementNamed(context, '/workspace-selection');
+      }
+    } else if (context.read<AuthProvider>().authError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.read<AuthProvider>().authError!),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override

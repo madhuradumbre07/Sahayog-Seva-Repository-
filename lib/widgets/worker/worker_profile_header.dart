@@ -5,6 +5,7 @@ import '../../l10n/l10n.dart';
 import '../../models/worker_dashboard_data.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/worker_dashboard_provider.dart';
+import '../../providers/worker_profile_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../workspace_switcher_sheet.dart';
@@ -16,7 +17,17 @@ class WorkerProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final workerProv = context.watch<WorkerDashboardProvider>();
+    final profileProv = context.watch<WorkerProfileProvider>();
+    final profile = workerProv.profile ?? profileProv.currentProfile;
     final isOnline = workerProv.availability == WorkerAvailability.online;
+
+    final name = profile?['full_name'] as String? ??
+        (auth.workerName.isNotEmpty ? auth.localizedWorkerName(context) : 'Worker');
+    final skills = (profile?['skills'] as List?)?.cast<String>() ?? [];
+    final trade = skills.isNotEmpty ? skills.join(', ') : (profile?['location'] as String? ?? '');
+    final rating = profile?['rating_avg'] as num?;
+    final reviews = profile?['review_count'] as num?;
+    final verified = (profile?['verification_status'] as String?) == 'VERIFIED';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -35,7 +46,6 @@ class WorkerProfileHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Avatar with status indicator
           Stack(
             children: [
               const CircleAvatar(
@@ -59,8 +69,6 @@ class WorkerProfileHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 14),
-
-          // Worker Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,19 +79,16 @@ class WorkerProfileHeader extends StatelessWidget {
                   runSpacing: 2,
                   children: [
                     Text(
-                      auth.localizedWorkerName(context),
+                      name,
                       style: AppTypography.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    if (auth.isWorkerVerified)
+                    if (verified)
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE8F5E9),
                           borderRadius: BorderRadius.circular(6),
@@ -99,18 +104,19 @@ class WorkerProfileHeader extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  context.tr('plumberTradeExp'),
-                  style: AppTypography.subtitle(fontSize: 12),
-                ),
+                if (trade.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(trade, style: AppTypography.subtitle(fontSize: 12)),
+                ],
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     const Icon(Icons.star, color: Color(0xFFFFA000), size: 14),
                     const SizedBox(width: 4),
                     Text(
-                      context.tr('workerRating'),
+                      rating != null && rating > 0
+                          ? '$rating (${reviews ?? 0})'
+                          : 'No reviews yet',
                       style: AppTypography.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -122,8 +128,6 @@ class WorkerProfileHeader extends StatelessWidget {
               ],
             ),
           ),
-
-          // Switch Role button
           IconButton(
             onPressed: () => WorkspaceSwitcherSheet.show(context),
             icon: const Icon(Icons.swap_horiz, color: AppColors.primary),

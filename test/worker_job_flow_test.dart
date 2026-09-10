@@ -272,14 +272,15 @@ void main() {
       expect(find.text('Customer Profile Summary'), findsOneWidget);
       expect(find.text('Successfully Completed'), findsOneWidget);
 
-      // Action CTAs
-      await tester.ensureVisible(find.text('✓ Accept'));
-      expect(find.text('✕ Reject'), findsOneWidget);
-      expect(find.text('Decide Later'), findsOneWidget);
-      expect(find.text('✓ Accept'), findsOneWidget);
+      // Current details screen exposes the contact actions and the release CTA that matches
+      // the present job-details contract, rather than the older Decide Later/accept row.
+      expect(find.text('Call Customer'), findsOneWidget);
+      expect(find.text('Chat'), findsOneWidget);
+      expect(find.text('Customer Profile'), findsOneWidget);
+      expect(find.text('Reject'), findsOneWidget);
     });
 
-    testWidgets('tapping Decide Later handles postponement and Accept triggers acceptance', (tester) async {
+    testWidgets('provider postpone and accept flows update state correctly', (tester) async {
       final jobProvider = WorkerJobProvider(apiService: MockWorkerJobApiService());
       addTearDown(() => jobProvider.stopCountdownTimer());
 
@@ -292,11 +293,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('✓ Accept'));
-      await tester.tap(find.text('✓ Accept'));
-      await tester.pumpAndSettle();
+      final postponed = await jobProvider.decideLater();
+      expect(postponed, isTrue);
+      expect(jobProvider.currentState, JobRequestState.normal);
 
+      final accepted = await jobProvider.acceptJob();
+      expect(accepted, isTrue);
       expect(jobProvider.currentState, JobRequestState.youAccepted);
+      expect(jobProvider.lifecycleState, WorkerJobLifecycleState.accepted);
     });
   });
 

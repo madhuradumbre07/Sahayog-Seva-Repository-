@@ -9,6 +9,12 @@ import '../../theme/app_typography.dart';
 class JobRequestAlertCard extends StatelessWidget {
   const JobRequestAlertCard({super.key});
 
+  String _label(BuildContext context, String value) {
+    if (value.isEmpty) return value;
+    final translated = context.tr(value);
+    return translated;
+  }
+
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<WorkerDashboardProvider>();
@@ -19,7 +25,7 @@ class JobRequestAlertCard extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        Navigator.of(context).pushNamed('/worker/new-job-request');
+        Navigator.of(context).pushNamed('/worker/new-job-request', arguments: req.id);
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
@@ -40,7 +46,6 @@ class JobRequestAlertCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          // Header with count and timer
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -48,10 +53,7 @@ class JobRequestAlertCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: const Color(0xFFD32F2F),
                         borderRadius: BorderRadius.circular(10),
@@ -80,39 +82,15 @@ class JobRequestAlertCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3E0),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.timer, color: Color(0xFFE65100), size: 12),
-                    const SizedBox(width: 4),
-                    Text(
-                      prov.formattedCountdown,
-                      style: AppTypography.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFE65100),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
-
-          // Request Title and Price
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
-                  context.tr(req.titleKey),
+                  _label(context, req.title),
                   style: AppTypography.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -135,18 +113,21 @@ class JobRequestAlertCard extends StatelessWidget {
             req.location,
             style: AppTypography.subtitle(fontSize: 12),
           ),
+          if (req.customerName.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(req.customerName, style: AppTypography.subtitle(fontSize: 12)),
+          ],
           const SizedBox(height: 16),
-
-          // Accept / Reject Buttons
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {
-                    prov.rejectJobRequest(req.id);
+                  onPressed: () async {
+                    final ok = await prov.rejectJobRequest(req.id);
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(context.tr('requestRejectedToast')),
+                        content: Text(ok ? context.tr('requestRejectedToast') : (prov.errorMessage ?? 'Reject failed')),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -172,12 +153,13 @@ class JobRequestAlertCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    prov.acceptJobRequest(req.id);
+                  onPressed: () async {
+                    final ok = await prov.acceptJobRequest(req.id);
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(context.tr('requestAcceptedToast')),
-                        backgroundColor: const Color(0xFF2E7D32),
+                        content: Text(ok ? context.tr('requestAcceptedToast') : (prov.errorMessage ?? 'Accept failed')),
+                        backgroundColor: ok ? const Color(0xFF2E7D32) : Colors.red,
                         behavior: SnackBarBehavior.floating,
                       ),
                     );

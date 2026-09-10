@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 
+import 'firebase_options.dart';
 import 'l10n/l10n.dart';
 import 'providers/auth_provider.dart';
 import 'providers/customer_dashboard_provider.dart';
@@ -33,16 +35,23 @@ import 'providers/booking_tracking_provider.dart';
 import 'providers/service_completion_provider.dart';
 import 'providers/cooperative_dashboard_provider.dart';
 import 'providers/worker_job_provider.dart';
+import 'providers/wallet_provider.dart';
+import 'providers/worker_profile_provider.dart';
 import 'screens/cooperative/cooperative_dashboard_screen.dart';
 import 'screens/worker/worker_new_job_request_screen.dart';
 import 'screens/worker/worker_job_details_screen.dart';
 import 'screens/worker/worker_job_response_result_screen.dart';
 import 'screens/worker/worker_job_in_progress_screen.dart';
 import 'screens/worker/worker_job_completion_summary_screen.dart';
+import 'screens/worker/worker_registration_screen.dart';
+import 'screens/admin/admin_worker_verification_screen.dart';
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   final languageProvider = LanguageProvider();
   final authProvider = AuthProvider();
   await languageProvider.init();
@@ -89,6 +98,8 @@ class SahayogSevaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RegistrationProvider()),
         ChangeNotifierProvider(create: (_) => WorkerJobProvider()),
         ChangeNotifierProvider(create: (_) => CooperativeDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => WalletProvider()),
+        ChangeNotifierProvider(create: (_) => WorkerProfileProvider()),
       ],
       child: Consumer2<LanguageProvider, AuthProvider>(
         builder: (context, language, auth, _) {
@@ -187,6 +198,10 @@ class SahayogSevaApp extends StatelessWidget {
                   const WorkerJobCompletionSummaryScreen(),
               CooperativeDashboardScreen.routeName: (context) =>
                   const CooperativeDashboardScreen(),
+              WorkerRegistrationScreen.routeName: (context) =>
+                  const WorkerRegistrationScreen(),
+              AdminWorkerVerificationScreen.routeName: (context) =>
+                  const AdminWorkerVerificationScreen(),
             },
           );
         },

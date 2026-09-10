@@ -46,6 +46,14 @@ class AppointmentTimelineCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          if (appointments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                context.tr('noAppointments'),
+                style: AppTypography.subtitle(fontSize: 13),
+              ),
+            ),
           ...appointments.map((apt) {
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
@@ -81,7 +89,7 @@ class AppointmentTimelineCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          context.tr(apt.titleKey),
+                          apt.title.isNotEmpty ? context.tr(apt.title) : context.tr(apt.titleKey),
                           style: AppTypography.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,

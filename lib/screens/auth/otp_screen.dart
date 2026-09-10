@@ -130,10 +130,10 @@ class _OtpScreenState extends State<OtpScreen> {
       _verifying = true;
       _errorText = null;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 800));
+
+    final result = await auth.verifyOtp(_code);
     if (!mounted) return;
 
-    final result = auth.verifyOtp(_code);
     if (result == OtpVerifyResult.success) {
       // Sync live profile from database for returning users
       await auth.syncUserProfileFromBackend(mobile: auth.phoneDigits);
@@ -158,9 +158,10 @@ class _OtpScreenState extends State<OtpScreen> {
       _verifying = false;
       _invalid = result == OtpVerifyResult.invalid;
       _expiredMessage = result == OtpVerifyResult.expired;
-      _errorText = result == OtpVerifyResult.expired
-          ? context.tr('otpExpired')
-          : context.tr('invalidOtp');
+      _errorText = auth.authError ??
+          (result == OtpVerifyResult.expired
+              ? context.tr('otpExpired')
+              : context.tr('invalidOtp'));
     });
   }
 
@@ -168,17 +169,25 @@ class _OtpScreenState extends State<OtpScreen> {
     final language = context.read<LanguageProvider>();
     final online = await language.checkConnectivity();
     if (!online || !mounted) return;
-    await context.read<AuthProvider>().sendOtp();
-    for (final controller in _controllers) {
-      controller.clear();
+    final auth = context.read<AuthProvider>();
+    final sent = await auth.sendOtp(isResend: true);
+    if (!mounted) return;
+    if (sent) {
+      for (final controller in _controllers) {
+        controller.clear();
+      }
+      _nodes.first.requestFocus();
+      setState(() {
+        _invalid = false;
+        _expiredMessage = false;
+        _errorText = null;
+      });
+      _scheduleTick();
+    } else if (auth.authError != null) {
+      setState(() {
+        _errorText = auth.authError;
+      });
     }
-    _nodes.first.requestFocus();
-    setState(() {
-      _invalid = false;
-      _expiredMessage = false;
-      _errorText = null;
-    });
-    _scheduleTick();
   }
 
   @override
